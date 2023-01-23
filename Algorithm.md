@@ -11,7 +11,7 @@
 
 * 代码实现
 
-    ```c++
+    ```C++
     vector<int> Dijkstra(vector<vector<pair<int,int>>>&edges,int k){
         //传入k是起始点
         //初始化为不可达
@@ -27,7 +27,6 @@
             if(dicts[u]<d)continue;
             for(auto &[v,w]:edges[u]){
                 int d1=d+w;
-                //尽可能剪枝
                 if(dicts[v]>d1){
                     qu.push({d1,v});
                     dicts[v]=d1;
@@ -40,7 +39,7 @@
 
 * 封装
 
-    ```c++
+    ```C++
     auto Dijkstra=[&](vector<vector<pair<int,int>>>&edges,int k) -> vector<int> {
         int n=edges.size();
         vector<int>dicts(n,0x3f3f3f3f);
@@ -182,6 +181,79 @@
     * 时间复杂度： O($n^3$)
 
     * 空间复杂度： O($n^2$)
+
+### D. BFS/DFS解决固定边权问题
+
+用于边权固定的图。
+
+* BFS
+
+    * 代码实现
+
+        ```C++
+        // 以k节点开始，以及预处理好邻接表edges，顶点数n
+        vector<int>dicts(n);
+        vector<bool>visited(n);
+        queue<int>qu;
+        qu.push(k);
+        visited[k]=true;
+        int depth=1;
+        while(!qu.empty()){
+            int nq=qu.size();
+            while(nq--){
+                int u=qu.front();
+                qu.pop();
+                for(auto &v:edges[u]){
+                    if(!visited[v]){
+                        dicts[v]=depth;
+                        qu.push(v);
+                        visited[v]=true;
+                    }
+                }
+            }
+            depth++;
+        }
+        ```
+
+    * 维护最短路径
+
+        维护一个pre数组，存储当前节点的上一个节点。
+
+        ```C++
+        // 以k节点开始，以及预处理好邻接表edges，顶点数n
+        vector<int>dicts(n);
+        vector<bool>visited(n);
+        vector<int>pre(n);
+        iota(pre.begin(),pre.end(),0);
+        queue<int>qu;
+        qu.push(k);
+        visited[k]=true;
+        while(!qu.empty()){
+            int nq=qu.size();
+            while(nq--){
+                int u=qu.front();
+                qu.pop();
+                for(auto &v:edges[u]){
+                    if(!visited[v]){
+                        pre[v]=u;
+                        qu.push(v);
+                        visited[v]=true;
+                    }
+                }
+            }
+        }
+        ```
+        ```C++
+        // 起点k到任一点e的路径可以通过以下方法求得，保证k、e互达。
+        ptr=e;
+        vector<int>round;
+        while(pre[ptr]!=ptr){
+            round.push_back(ptr);
+            ptr=pre[ptr];
+        }
+        round.push_back(ptr);
+        reverse(round.begin(),round.end());
+        ```
 
 ## 2. 拓扑排序
 
@@ -693,7 +765,7 @@
         TreeBuild(pre,in,0,0,0,0);
         ```
 
-### C. 最小生成树
+### C. 最小（大）生成树
 
 * 普里姆算法
 
@@ -919,6 +991,52 @@
         $$
         故可以用乘法来代替除法。
 
+## 3. 最大公约数
+
+* 细节
+
+    利用辗转相除法，得到最大公约数。
+
+    $$
+    \left.\begin{matrix} 
+    a>b \\
+    a \div b = q \dots r  \Rightarrow  a=bq+r  \Rightarrow  r=a-bq\\
+    gcd(a,b)=d \Rightarrow a=dm,b=dn\\
+    \end{matrix}\right\}
+    \Rightarrow r=dm-dnq \Rightarrow r=d(m-nq) \Rightarrow d|r\\
+    \Rightarrow gcd(a,b)==gcd(b,r)
+    $$
+    
+    b==0 -> 直接返回a
+    b!=0 -> 计算b和a%b的最大公约数（当a<b,操作等同于gcd(b,a)保证了计算的是a>b的情况。）
+
+
+* 实现
+
+    ```C++
+    inline int gcd(int a,int b) {
+        int r;
+        while(b>0){
+            r=a%b;
+            a=b;
+            b=r;
+        }
+        return a;
+    }
+    ```
+
+    ```C++
+    inline long long gcd(long long a, long long b) {
+        return b > 0 ? gcd(b, a % b) : a;
+    }
+    ```
+
+* 分析
+
+    * 时间复杂度：O(logn)
+
+    * 空间复杂度：O(1)/O(logn)
+
 # **字符串**
 
 ## 1. 字符串匹配算法KMP
@@ -1097,6 +1215,46 @@ lower_bound，第一个大于等于的查找元素的位置。
         return l;
     }
     ```
+
+## 3. 查找单调函数的零点
+
+* 代码实现
+
+    ```C++
+    auto check=[&](int num){
+        if(/* */)return true;
+        else return false;
+    };
+    int l=LOW,r=HIGH;
+    while(l<r){
+        int mid=(r-l)/2+l;
+        if(check(mid))r=mid;
+        else l=mid+1;
+    }
+    ```
+
+    这里mid偏l所以不会有无限循环风险。当mid成立的时候可能是答案，所以mid需要保留，当mid不成立的时候mid不必保留。
+
+## 4. 查找凹凸函数的极值点
+
+以凸函数为例。
+
+* 代码实现
+
+    ```C++
+    auto calculate=[&](int num){
+        /* */
+        return val;
+    };
+    int l=LOW,r=HIGH;
+    while(l<r){
+        int mid=(l+r)>>1;
+        if(calculate(mid)>calculate(mid+1))r=mid;
+        else l=mid+1;
+    }
+    ```
+
+    不断靠近最大值。
 
 # **排序算法**
 
@@ -1940,7 +2098,7 @@ lower_bound，第一个大于等于的查找元素的位置。
 
 * 细节
 
-        维护的是数组的前缀和。维护区间应该映射到[0,x]，x代表的是元素的个数。
+        维护的是数组的前缀和。
         对于一个数x，他的父节点是x+lower(x)。
         每次单点更新一个值的时候将其所有的父节点同时更新。
         
@@ -1948,8 +2106,9 @@ lower_bound，第一个大于等于的查找元素的位置。
         void update(int x, int d)   单点更新x的位置增加d
         int query(int x)            区间查询[1,x]
         
-        tree下标0弃置，A下标+1
-        在做离散化的时候可以将其映射到[1,x+1]这样就可以不用在乎查询/插入的时候下标+1
+        tree下标0弃置，A下标+1。
+        维护区间应该映射到[1,x+1]，x代表的是元素的个数。
+        在做离散化的时候可以将其映射到[1,x+1]这样就可以不用在乎查询/插入的时候下标+1。
         
         A[1]    tree[1]=A[1];
         
@@ -2013,3 +2172,92 @@ lower_bound，第一个大于等于的查找元素的位置。
     * 时间复杂度：预处理O(nlogn) 单次查找O(logn) 单次插入O(logn)
 
     * 空间复杂度：O(n)
+
+# **常见思维**
+
+## 1. 前缀和
+
+一次维护，快速获取区间信息（值不可变，值可变选择线段树/树状数组）。
+
+* 1维
+
+    ```C++
+    // 维护
+    vector<int>pre(n+1);
+    for(int i=0;i<n;i++){
+        pre[i+1]=pre[i]+nums[i];
+    }
+    // 使用
+    int sum_from_x_to_y=pre[y+1]-pre[x];
+    ```
+
+* 2维
+
+    ```C++
+    // 维护
+    for(int i=0;i<n;i++){
+        for(int j=0;j<m;j++){
+            pre[i+1][j+1]=pre[i+1][j]+pre[i][j+1]-pre[i][j]+nums[i][j];
+        }
+    }
+    // 使用
+    int sum_from_x1y1_to_x2y2=pre[x2+1][y2+1]-pre[x1][y2+1]-pre[x2+1][y1]+pre[x1][y1];
+    ```
+
+## 2. 动态规划
+
+### 重点
+
+* 需要保存什么状态，怎么保存状态（这里可以考虑二进制压缩状态）。
+
+* 转移方程。 （现态==次态，这一步难求的话可以考虑记忆化深搜。）
+
+* 边界条件。 （初始状态）
+
+* 根据次态位置确定维护顺序，更有甚者可能结合拓扑排序确定。
+
+* 滚动数组优化？
+
+### 例子
+
+#### A. 最大子数组和
+
+https://leetcode.cn/problems/maximum-subarray/
+
+* 定义dp[i]为仅考虑前i+1个数字且确定选择nums[i]的最大可能。
+
+* 转移方程：dp[i]=max(nums[i],dp[i-1]+nums[i])
+
+* 边界条件：dp[0]=nums[0];
+
+* 代码实现
+
+    ```C++
+    int maxSubArray(vector<int>& nums) {
+        int n=nums.size(),ret=nums[0];
+        vector<int>dp(n);
+        dp[0]=nums[0];
+        for(int i=1;i<n;i++){
+            dp[i]=max(nums[i],dp[i-1]+nums[i]);
+            ret=max(dp[i],ret);
+        }
+        return ret;
+    }
+    ```
+
+* 注意到现态只与前一个状态相关，故可以优化。
+
+    ```C++
+    int maxSubArray(vector<int>& nums) {
+        int pre=0,Maxans=nums[0];
+        for(const auto &x:nums){
+            pre=max(x,pre+x);
+            Maxans=max(pre,Maxans);
+        }
+        return Maxans;
+    }
+    ```
+
+## 3. 二分搜索
+
+解决寻找单调函数零点问题
